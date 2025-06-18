@@ -1,2 +1,2 @@
-![Biểu đồ lớp](quanly.drawio.png)
+![Biểu đồ lớp](class_diagram.png)
 
