@@ -17,7 +17,16 @@ public class UserService {
     public List<User> getAll() {
         return userRepo.findAll();
     }
-
+    public User getUserByUserId(Integer userId) {
+        return userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found!"));
+    }
+    public User updateUser(Integer userId, User  updateUser) {
+        User existingUser = userRepo.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        existingUser.setName(updateUser.getName());
+        existingUser.setEmail(updateUser.getEmail());
+        existingUser.setPhone(updateUser.getPhone());
+        return userRepo.save(existingUser);
+    }
 
 
 

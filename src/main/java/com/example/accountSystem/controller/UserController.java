@@ -22,4 +22,12 @@ public class UserController {
     public List<User> getAll() {
         return userService.getAll();
     }
+    @GetMapping("/{userId}")
+    public User getUserById(@PathVariable Integer userId) {
+        return userService.getUserByUserId(userId);
+    }
+    @PutMapping("/{userId}")
+    public User updateUser(@PathVariable Integer userId, @RequestBody User updateUser) {
+        return userService.updateUser(userId, updateUser);
+    }
 }

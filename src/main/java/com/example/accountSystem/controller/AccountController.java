@@ -19,8 +19,16 @@ public class AccountController {
     public List<Account> getAll() {
         return accountService.getAll();
     }
+    @GetMapping("/{username}")
+    public Account getAccountByUsername(@PathVariable String username) {
+        return accountService.getAccountByUsername(username);
+    }
     @PutMapping("/{username}/deactivate")
     public Account deactivateAccount(@PathVariable String username) {
         return accountService.updateStatus(username, "DISABLED");
+    }
+    @PutMapping("/{username}")
+    public Account updateUsername(@PathVariable String username, @RequestBody Account updateAccount) {
+        return accountService.updateAccount(username, updateAccount);
     }
 }

@@ -22,10 +22,22 @@ public class AccountService {
     {
         return accountRepo.findAll();
     }
+    public Account getAccountByUsername(String username)
+    {
+        return accountRepo.findById(username).orElseThrow(() -> new RuntimeException("Account not found"));
+    }
     public Account updateStatus(String username,String status){
         Account account=accountRepo.findById(username).orElseThrow(()->new RuntimeException("Account not found!"));
         account.setStatus(status);
         account.setUpdateAt(LocalDateTime.now());
         return accountRepo.save(account);
     }
+    public Account updateAccount(String username,Account updateAccount){
+        Account existingAccount = accountRepo.findById(username).orElseThrow(()->new RuntimeException("Account not found!"));
+        existingAccount.setStatus(updateAccount.getStatus());
+        existingAccount.setStatus(updateAccount.getStatus());
+        existingAccount.setUpdateAt(LocalDateTime.now());
+        return accountRepo.save(existingAccount);
+    }
+
 }
