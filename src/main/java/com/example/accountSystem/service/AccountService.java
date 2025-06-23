@@ -4,6 +4,8 @@ import com.example.accountSystem.Entity.Account;
 import com.example.accountSystem.repository.AccountRepository;
 import com.example.accountSystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,5 +22,10 @@ public class AccountService {
     {
         return accountRepo.findAll();
     }
-
+    public Account updateStatus(String username,String status){
+        Account account=accountRepo.findById(username).orElseThrow(()->new RuntimeException("Account not found!"));
+        account.setStatus(status);
+        account.setUpdateAt(LocalDateTime.now());
+        return accountRepo.save(account);
+    }
 }
