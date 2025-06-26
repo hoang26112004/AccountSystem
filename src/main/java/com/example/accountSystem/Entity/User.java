@@ -2,26 +2,28 @@ package com.example.accountSystem.Entity;
 
 import jakarta.persistence.*;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "users")
 public class User {
     @Id
 //    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer userId;
+    private Integer id;
     @Column(nullable = false)
     private String email;
     @Column(nullable = false)
     private String name;
     private String phone;
+    @JsonManagedReference
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL)
     private List<Account> accounts;
 
     public User() {
     }
 
-    public User(Integer userId, String email, String name, String phone) {
-        this.userId = userId;
+    public User(Integer id, String email, String name, String phone) {
+        this.id = id;
         this.email = email;
         this.name = name;
         this.phone = phone;
@@ -51,11 +53,11 @@ public class User {
         this.email = email;
     }
 
-    public Integer getUserId() {
-        return userId;
+    public Integer getId() {
+        return id;
     }
 
-    public void setUserId(Integer userId) {
-        this.userId = userId;
+    public void setId(Integer id) {
+        this.id = id;
     }
 }

@@ -28,7 +28,7 @@ public class AccountController {
         return accountService.updateStatus(username, "DISABLED");
     }
     @PutMapping("/{username}")
-    public Account updateUsername(@PathVariable String username, @RequestBody Account updateAccount) {
+    public Account updateAccount(@PathVariable String username, @RequestBody Account updateAccount) {
         return accountService.updateAccount(username, updateAccount);
     }
 }

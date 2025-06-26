@@ -36,7 +36,7 @@ public class AccountService {
     public Account updateAccount(String username,Account updateAccount){
         Account existingAccount = accountRepo.findById(username).orElseThrow(()->new RuntimeException("Account not found!"));
         existingAccount.setStatus(updateAccount.getStatus());
-        existingAccount.setStatus(updateAccount.getStatus());
+        existingAccount.setSystem(updateAccount.getSystem());
         existingAccount.setUpdateAt(LocalDateTime.now());
         return accountRepo.save(existingAccount);
     }
