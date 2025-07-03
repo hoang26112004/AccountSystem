@@ -1,144 +1,133 @@
-//package com.example.accountSystem.service;
-//
-//import com.example.accountSystem.Entity.Account;
-//import com.example.accountSystem.repository.AccountRepository;
-//import com.example.accountSystem.repository.UserRepository;
-//import org.springframework.stereotype.Service;
-//
-//import java.time.LocalDateTime;
-//import java.util.List;
-//import java.util.Optional;
-//
-//@Service
-//public class AccountService {
-//    private final AccountRepository accountRepo;
-//    public AccountService(AccountRepository accountRepo) {
-//        this.accountRepo = accountRepo;
-//    }
-//    public Account addAccount(Account account) {
-//        return accountRepo.save(account);
-//    }
-//
-//    public List<Account> getAll()
-//    {
-//        return accountRepo.findAll();
-//    }
-//    public Account getAccountByUsername(String username)
-//    {
-//        return accountRepo.findById(username).orElseThrow(() -> new RuntimeException("Account not found"));
-//    }
-//    public Account updateStatus(String username,String status){
-//        Account account=accountRepo.findById(username).orElseThrow(()->new RuntimeException("Account not found!"));
-//        account.setStatus(status);
-//        account.setUpdateAt(LocalDateTime.now());
-//        return accountRepo.save(account);
-//    }
-//    public Account updateAccount(String username,Account updateAccount){
-//        Account existingAccount = accountRepo.findById(username).orElseThrow(()->new RuntimeException("Account not found!"));
-//        existingAccount.setStatus(updateAccount.getStatus());
-//        existingAccount.setSystem(updateAccount.getSystem());
-//        existingAccount.setUpdateAt(LocalDateTime.now());
-//        return accountRepo.save(existingAccount);
-//    }
-//
-//}
 package com.example.accountSystem.service;
 
-import com.example.accountSystem.Entity.Account;
+import com.example.accountSystem.entity.Account;
+import com.example.accountSystem.entity.User;
+import com.example.accountSystem.reponse.AccountReponse;
 import com.example.accountSystem.repository.AccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.accountSystem.repository.UserRepository;
+import com.example.accountSystem.requests.AddAccountRequest;
+import com.example.accountSystem.requests.UpdateAccountRequest;
+import lombok.Data;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class AccountService {
+    private final AccountRepository accountRepository;
+    private final UserRepository userRepository;
+    private final RestClient restClient;
 
-    private final AccountRepository accountRepo;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
-    public AccountService(AccountRepository accountRepo) {
-        this.accountRepo = accountRepo;
-    }
-
-    public Account addAccount(Account account) {
-        Account saved = accountRepo.save(account);
-
-        // 📨 Gửi thông báo "tạo mới" sang mock-server
-        BankActionRequest request = new BankActionRequest();
-        request.setAccountId(saved.getUsername());
-        request.setAction("ACTIVE");
-        request.setSystem(saved.getSystem());
-
-        try {
-            restTemplate.postForEntity("http://localhost:8085/bank/mock/receive", request, String.class);
-            System.out.println("✅ Đã gửi thông báo tạo mới cho account [" + saved.getUsername() + "] tới mock-server");
-        } catch (Exception e) {
-            System.err.println("❌ Gửi thông báo tạo mới thất bại: " + e.getMessage());
-        }
-
-        return saved;
+    public AccountService(AccountRepository accountRepository, UserRepository userRepository, RestClient restClient) {
+        this.accountRepository = accountRepository;
+        this.userRepository = userRepository;
+        this.restClient = restClient;
     }
 
     public List<Account> getAll() {
-        return accountRepo.findAll();
+        return accountRepository.findAll();
     }
 
-    public Account getAccountByUsername(String username) {
-        return accountRepo.findById(username)
+    public Account getAccountById(Long id) {
+        return accountRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
     }
 
-    public Account updateStatus(String username, String status) {
-        Account account = accountRepo.findById(username)
+    public AccountReponse addAccountFromRequest(AddAccountRequest request) {
+        if (accountRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username đã tồn tại: " + request.getUsername());
+        }
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy user với ID: " + request.getUserId()));
+
+        Account account = new Account();
+        account.setUsername(request.getUsername());
+        account.setSystem(request.getSystem());
+        account.setStatus(request.getStatus());
+        account.setUser(user);
+
+        Account saved = accountRepository.save(account);
+
+        BankActionRequest notify = new BankActionRequest();
+        notify.setAccountId(saved.getId());
+        notify.setAction("ACTIVE");
+        notify.setSystem(saved.getSystem());
+
+        try {
+            restClient.post()
+                    .uri("http://localhost:8085/bank/mock/receive")
+                    .body(notify)
+                    .retrieve()
+                    .toEntity(String.class);
+            System.out.println(" Đã gửi thông báo tạo mới account [" + saved.getId() + "]");
+        } catch (Exception e) {
+            System.err.println(" Gửi thông báo thất bại: " + e.getMessage());
+        }
+
+        return new AccountReponse(saved);
+    }
+
+    public Account updateStatus(Long id, String status) {
+        Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Account not found!"));
+
         account.setStatus(status);
         account.setUpdateAt(LocalDateTime.now());
-        Account updated = accountRepo.save(account);
+        Account updated = accountRepository.save(account);
 
-        // 📨 Gửi thông báo cập nhật trạng thái sang mock-server
         BankActionRequest request = new BankActionRequest();
-        request.setAccountId(username);
+        request.setAccountId(id);
         request.setAction(status);
         request.setSystem(account.getSystem());
 
         try {
-            restTemplate.postForEntity("http://localhost:8085/bank/mock/receive", request, String.class);
-            System.out.println("✅ Gửi status [" + status + "] của account [" + username + "] tới mock-server thành công");
+            restClient.post()
+                    .uri("http://localhost:8085/bank/mock/receive")
+                    .body(request)
+                    .retrieve()
+                    .toEntity(String.class);
+            System.out.println(" Gửi status [" + status + "] của account [" + id + "] tới mock-server thành công");
         } catch (Exception e) {
-            System.err.println("❌ Không gửi được đến mock-server: " + e.getMessage());
+            System.err.println(" Không gửi được đến mock-server: " + e.getMessage());
         }
 
         return updated;
     }
 
-    public Account updateAccount(String username, Account updateAccount) {
-        Account existingAccount = accountRepo.findById(username)
-                .orElseThrow(() -> new RuntimeException("Account not found!"));
-        existingAccount.setStatus(updateAccount.getStatus());
-        existingAccount.setSystem(updateAccount.getSystem());
-        existingAccount.setUpdateAt(LocalDateTime.now());
-        return accountRepo.save(existingAccount);
-    }
+    public AccountReponse updateAccount(Long id, UpdateAccountRequest request) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Account không tồn tại!"));
 
-    // 👇 DTO để gửi sang mock-server
+        account.setSystem(request.getSystem());
+        account.setStatus(request.getStatus());
+        account.setUpdateAt(LocalDateTime.now());
+        Account saved = accountRepository.save(account);
+
+        BankActionRequest notify = new BankActionRequest();
+        notify.setAccountId(saved.getId());
+        notify.setAction("UPDATED");
+        notify.setSystem(saved.getSystem());
+
+        try {
+            restClient.post()
+                    .uri("http://localhost:8085/bank/mock/receive")
+                    .body(notify)
+                    .retrieve()
+                    .toEntity(String.class);
+            System.out.println(" Đã gửi cập nhật [" + saved.getStatus() + "] cho account [" + id + "] tới mock-server");
+        } catch (Exception e) {
+            System.err.println(" Không gửi được cập nhật tới mock-server: " + e.getMessage());
+        }
+
+        return new AccountReponse(saved);
+    }
+    @Data
     public static class BankActionRequest {
-        private String accountId;
+        private Long accountId;
         private String action;
         private String system;
-
-        public String getAccountId() { return accountId; }
-        public void setAccountId(String accountId) { this.accountId = accountId; }
-
-        public String getAction() { return action; }
-        public void setAction(String action) { this.action = action; }
-
-        public String getSystem() { return system; }
-        public void setSystem(String system) { this.system = system; }
     }
 }
-

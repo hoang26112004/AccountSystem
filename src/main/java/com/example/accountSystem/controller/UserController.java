@@ -1,13 +1,17 @@
 package com.example.accountSystem.controller;
 
+import com.example.accountSystem.reponse.UserReponse;
+import com.example.accountSystem.requests.AddUserRequest;
 import com.example.accountSystem.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import com.example.accountSystem.service.UserService;
+
 import java.util.List;
-import com.example.accountSystem.Entity.User;
+import com.example.accountSystem.entity.User;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
     private final UserService userService;
 
@@ -15,8 +19,8 @@ public class UserController {
         this.userService = userService;
     }
     @PostMapping("/add")
-    public User addUser(@RequestBody User user) {
-        return userService.addUser(user);
+    public ResponseEntity<UserReponse> addUser(@Valid @RequestBody AddUserRequest request) {
+        return ResponseEntity.ok(userService.addUser(request));
     }
     @GetMapping("/")
     public List<User> getAll() {
@@ -25,9 +29,5 @@ public class UserController {
     @GetMapping("/{userId}")
     public User getUserById(@PathVariable Integer userId) {
         return userService.getUserByUserId(userId);
-    }
-    @PutMapping("/{userId}")
-    public User updateUser(@PathVariable Integer userId, @RequestBody User updateUser) {
-        return userService.updateUser(userId, updateUser);
     }
 }

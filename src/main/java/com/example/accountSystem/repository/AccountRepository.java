@@ -1,7 +1,12 @@
 package com.example.accountSystem.repository;
-import com.example.accountSystem.Entity.Account;
+import com.example.accountSystem.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-public interface AccountRepository extends JpaRepository<Account,String> {
-
+@Repository
+public interface AccountRepository extends JpaRepository<Account, Long> {
+    boolean existsByUsername(String username);
+//    Account findByUsername(String username);
 }
+
+
