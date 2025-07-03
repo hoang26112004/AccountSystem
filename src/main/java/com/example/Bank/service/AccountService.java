@@ -2,7 +2,6 @@ package com.example.Bank.service;
 
 import com.example.Bank.Entity.Account;
 import com.example.Bank.repository.AccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -10,21 +9,27 @@ import java.util.Optional;
 
 @Service
 public class AccountService {
-    @Autowired
-    private AccountRepository accountRepository;
 
-    public void updateSatus(String username, String satus) {
-        Optional<Account> accOpt = accountRepository.findById(username);
+    private final AccountRepository accountRepository;
+
+    public AccountService(AccountRepository accountRepository) {
+        this.accountRepository = accountRepository;
+    }
+
+    public void updateStatus(Long id, String status) {
+        Optional<Account> accOpt = accountRepository.findById(id);
         if (accOpt.isPresent()) {
             Account acc = accOpt.get();
-            acc.setStatus(satus);
-            acc.setUpdateAt(LocalDateTime.now());
+
+            // ❗ CHỈ cập nhật status nếu nó hợp lệ
+            if (status.equalsIgnoreCase("ACTIVE") || status.equalsIgnoreCase("DISABLED") || status.equalsIgnoreCase("LOCKED")) {
+                acc.setStatus(status);
+            }
+
+            acc.setUpdatedAt(LocalDateTime.now());
             accountRepository.save(acc);
-
-
-            System.out.println("Đã khóa ngắt username: " + username);
         } else {
-            System.out.println("Không tìm thấy account với username: " + username);
+            System.err.println("❌ Không tìm thấy account với ID: " + id);
         }
     }
 
